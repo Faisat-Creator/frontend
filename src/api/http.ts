@@ -150,9 +150,6 @@ export async function ensureOk(res: Response, fallback: string): Promise<void> {
   // Gateway errors mean the backend itself didn't answer.
   if (UNREACHABLE_STATUSES.has(res.status)) throw unreachable(res.status);
   const message = await readErrorMessage(res);
-  // The backend always sends a JSON body with its 500s; a bare one comes
-  // from a proxy in front of it.
-  if (!message && res.status === 500) throw unreachable(res.status);
   throw new ApiError(message ?? `${fallback} (HTTP ${res.status})`, "http", res.status);
 }
 
