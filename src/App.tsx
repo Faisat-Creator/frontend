@@ -155,7 +155,7 @@ export default function App() {
   /** Last catalog fetched with no filters: drives "N of TOTAL" and the hero stats. */
   const [unfiltered, setUnfiltered]     = useState<Resource[] | null>(null);
   /** id → title for every resource seen, so Purchases can name what was bought. */
-  const resourceTitlesRef               = useRef<Record<string, string>>({});
+  const [resourceTitles, setResourceTitles] = useState<Record<string, string>>({});
   const searchInputRef                  = useRef<HTMLInputElement>(null);
   const { theme, toggleTheme }          = useTheme();
   const wallet                          = useWalletConnection();
@@ -191,7 +191,11 @@ export default function App() {
   }, [resourcesStatus, loadedFilters, resources]);
 
   useEffect(() => {
-    for (const r of resources) resourceTitlesRef.current[r.id] = r.title;
+    setResourceTitles((prev) => {
+      const updated = { ...prev };
+      for (const r of resources) updated[r.id] = r.title;
+      return updated;
+    });
   }, [resources]);
 
   const sortedResources = useMemo(() => sortResources(resources, sort), [resources, sort]);
@@ -619,7 +623,7 @@ export default function App() {
             <Suspense fallback={<LazyFallback label={t("app.loading")} />}>
               <PurchasesDashboard initialWallet={wallet.address ?? ""}
                 connectedWallet={wallet.status === "connected" ? wallet.address : null}
-                resourceTitles={resourceTitlesRef.current} />
+                resourceTitles={resourceTitles} />
             </Suspense>
           )}
           {tab === "agent" && (
