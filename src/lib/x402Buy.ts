@@ -22,7 +22,7 @@ const networks: Record<string, NetworkPreset> = {
 import { explorerTxUrl } from "./stellarExplorer.js";
 import { freighterErrorMessage } from "./freighter.js";
 import { STELLAR_NETWORK } from "./config.js";
-import { safeExternalUrl } from "./safeExternalUrl.js";
+import { safeExternalUrl } from "./safeUrl.js";
 
 /** Resolve the deployment network the web app targets (defaults to testnet). */
 function resolveNetworkPreset(): NetworkPreset {
