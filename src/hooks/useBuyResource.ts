@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { checkNetwork } from "./useNetworkCheck.js";
 import {
   expectedNetworkPassphrase,
@@ -77,6 +77,15 @@ export function useBuyResource(address: string | null): BuyState {
     setResult(null);
     setError(null);
   }, []);
+
+  // Revoke object URLs when the result changes or the component unmounts to avoid blob leaks.
+  useEffect(() => {
+    return () => {
+      if (result?.download?.objectUrl) {
+        URL.revokeObjectURL(result.download.objectUrl);
+      }
+    };
+  }, [result?.download?.objectUrl]);
 
   return { status, result, error, buy, reset };
 }
