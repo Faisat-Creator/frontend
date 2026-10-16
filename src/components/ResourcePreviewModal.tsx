@@ -58,7 +58,8 @@ function LazyImage({ src, alt, className = "" }: LazyImageProps) {
   if (!src || errored) {
     return (
       <div
-        aria-label={alt}
+        role="img"
+        aria-label={`${alt} (no preview available)`}
         className={`flex items-center justify-center rounded-lg bg-surface-hover text-fg-subtle text-xs ${className}`}
       >
         No preview
