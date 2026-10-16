@@ -40,4 +40,22 @@ describe("fetchCatalogWithCache", () => {
 
     await expect(fetchCatalogWithCache()).rejects.toThrow("Network down");
   });
+
+  it("drops corrupt cached JSON and rethrows the network error", async () => {
+    const networkError = new Error("Network down");
+    vi.mocked(fetchCatalog).mockRejectedValue(networkError);
+    sessionStorage.setItem('synapsvault-catalog:{"search":"corrupt"}', "not-json");
+
+    await expect(fetchCatalogWithCache({ search: "corrupt" })).rejects.toBe(networkError);
+    expect(sessionStorage.getItem('synapsvault-catalog:{"search":"corrupt"}')).toBeNull();
+  });
+
+  it("forwards the abort signal to the catalog request", async () => {
+    const signal = new AbortController().signal;
+    vi.mocked(fetchCatalog).mockResolvedValue([]);
+
+    await fetchCatalogWithCache({ search: "signal" }, signal);
+
+    expect(fetchCatalog).toHaveBeenCalledWith({ search: "signal" }, signal);
+  });
 });
