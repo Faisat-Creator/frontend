@@ -48,12 +48,6 @@ export function BuyModal({
   const displayPrice = formatPrice(price);
   const safeResultUrl = result?.url ? safeExternalUrl(result.url) : null;
 
-  useEffect(() => {
-    previousFocusRef.current = document.activeElement as HTMLElement;
-    dialogRef.current?.focus();
-    return () => previousFocusRef.current?.focus();
-  }, []);
-
   // Block close mid-payment so a half-signed flow isn't abandoned silently.
   const handleClose = () => {
     if (status === "paying") return;

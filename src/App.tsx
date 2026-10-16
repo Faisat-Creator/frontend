@@ -240,7 +240,15 @@ export default function App() {
 
   const toggleLanguage = useCallback(async () => {
     const next = i18n.language === "en" ? "es" : "en";
-    await loadLocale(next);
+    try {
+
+      await loadLocale(next);
+
+    } catch (error) {
+
+      console.error("Failed to load locale", error);
+
+    }
     await i18n.changeLanguage(next);
     document.documentElement.lang = next;
   }, [i18n]);
