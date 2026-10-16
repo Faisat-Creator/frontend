@@ -20,7 +20,14 @@ const networks: Record<string, NetworkPreset> = {
   mainnet: { explorerNetwork: "public", x402Network: "stellar:pubnet", networkPassphrase: "Public Global Stellar Network ; September 2015", sorobanRpcUrl: "https://soroban.stellar.org", horizonUrl: "https://horizon.stellar.org", usdcSacContractId: "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75" },
 };
 import { explorerTxUrl } from "./stellarExplorer.js";
-import { freighterErrorMessage } from "./freighter.js";
+import {
+  FREIGHTER_NOT_FOUND,
+  FREIGHTER_NOT_FOUND_CODE,
+  FreighterError,
+  freighterErrorMessage,
+  isFreighterInstalled,
+  isFreighterNotFoundError,
+} from "./freighter.js";
 import { STELLAR_NETWORK } from "./config.js";
 import { safeExternalUrl } from "./safeUrl.js";
 
@@ -92,13 +99,15 @@ export interface PurchaseResult {
   explorerUrl?: string;
 }
 
-/** A purchase failure carrying the HTTP status so the UI can be specific. */
+/** A purchase failure carrying the HTTP status and optional error code so the UI can be specific. */
 export class PurchaseError extends Error {
   readonly status?: number;
-  constructor(message: string, status?: number) {
+  readonly code?: string;
+  constructor(message: string, status?: number, code?: string) {
     super(message);
     this.name = "PurchaseError";
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -142,6 +151,9 @@ export async function purchaseResource(
   accessUrl: string,
   address: string,
 ): Promise<PurchaseResult> {
+  if (!(await isFreighterInstalled())) {
+    throw new PurchaseError(FREIGHTER_NOT_FOUND, undefined, FREIGHTER_NOT_FOUND_CODE);
+  }
   const preset = resolveNetworkPreset();
   const signer = createFreighterSigner(address, preset.networkPassphrase);
   const client = new x402Client().register(
@@ -155,7 +167,17 @@ export async function purchaseResource(
     res = await paidFetch(accessUrl, { headers: { Accept: "application/json" } });
   } catch (err) {
     // wrapFetchWithPayment throws on signing/build failures (rejected signature, etc.).
-    throw new PurchaseError(err instanceof Error ? err.message : "Payment could not be completed.");
+    const code =
+      err instanceof FreighterError
+        ? err.code
+        : isFreighterNotFoundError(err)
+          ? FREIGHTER_NOT_FOUND_CODE
+          : undefined;
+    throw new PurchaseError(
+      err instanceof Error ? err.message : "Payment could not be completed.",
+      undefined,
+      code,
+    );
   }
 
   if (!res.ok) {

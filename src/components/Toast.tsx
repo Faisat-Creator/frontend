@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import "../i18n/config.js";
 
 interface ToastProps {
   message: string;
@@ -16,6 +18,7 @@ interface ToastProps {
  * can copy it manually.
  */
 export function Toast({ message, onDismiss, duration = 2500, fallbackUrl }: ToastProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-select the fallback URL text on mount so the user can Ctrl+C immediately
@@ -51,7 +54,7 @@ export function Toast({ message, onDismiss, duration = 2500, fallbackUrl }: Toas
           readOnly
           value={fallbackUrl}
           onClick={handleSelectAll}
-          aria-label="Resource URL"
+          aria-label={t("toast.resource_url_label")}
           className="w-full rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:border-gray-300 dark:bg-gray-200 dark:text-gray-800"
         />
       )}

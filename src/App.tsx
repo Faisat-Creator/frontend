@@ -18,7 +18,7 @@ import { fetchRegistryStatus } from "./api/resources.js";
 import type { CatalogFilters } from "./api/resources.js";
 import { loadLocale } from "./i18n/config.js";
 import { STELLAR_NETWORK } from "./lib/config.js";
-import { FREIGHTER_INSTALL_URL } from "./lib/freighter.js";
+import { FREIGHTER_INSTALL_URL, FREIGHTER_NOT_FOUND_CODE } from "./lib/freighter.js";
 
 export type { Resource };
 
@@ -465,7 +465,7 @@ export default function App() {
     wallet.error && (
       <p id="wallet-error" role="alert" className="synapse-wallet-error">
         {wallet.error}
-        {/not found/i.test(wallet.error) && (
+        {wallet.errorCode === FREIGHTER_NOT_FOUND_CODE && (
           <> <a href={FREIGHTER_INSTALL_URL} target="_blank" rel="noopener noreferrer">{t("app.install_freighter")} ↗</a></>
         )}
       </p>
@@ -662,6 +662,7 @@ export default function App() {
             recipient={activeModal.resource.walletAddress} accessUrl={activeModal.resource.accessUrl}
             walletAddress={wallet.status === "connected" ? wallet.address : null}
             onConnect={() => void wallet.connect()} connecting={walletBusy} walletError={wallet.error}
+            walletErrorCode={wallet.errorCode}
             onClose={closeModal} onCopyUrl={handleCopyUrl} />
         </Suspense>
       )}

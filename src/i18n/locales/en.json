@@ -46,6 +46,7 @@
     "publish_cta": "Publish a resource",
     "no_matches": "No resources match your filters.",
     "clear_filters": "Clear filters",
+    "toggle_filters": "Toggle filters",
     "preview": "Preview",
     "buy": "Buy",
     "copy_url": "Copy URL",
@@ -53,6 +54,23 @@
     "copied_toast": "Resource URL copied to clipboard",
     "clipboard_fallback": "Clipboard unavailable — copy the URL below:",
     "search_label": "Search resources",
+    "search_placeholder": "Search by title…",
+    "search_results": "Search results",
+    "filter_verification_label": "Filter by verification status",
+    "all_statuses": "All statuses",
+    "filter_type_label": "Filter by resource type",
+    "all_types": "All types",
+    "min_price_label": "Minimum price in USDC",
+    "min_price_placeholder": "Min",
+    "max_price_label": "Maximum price in USDC",
+    "max_price_placeholder": "Max",
+    "filtered_of_total": "of {{total}}",
+    "resources_count_one": "resource",
+    "resources_count_other": "resources",
+    "loading_resources": "Loading resources…",
+    "stale_banner_title": "Offline — catalog may be outdated.",
+    "stale_banner_with_time": "Showing cached catalog from {{time}}. Connect to refresh.",
+    "stale_banner_no_time": "Showing cached catalog. Connect to refresh.",
     "by_publisher": "by {{name}}",
     "view_tx": "View tx",
     "off_chain": "off-chain",
@@ -117,9 +135,22 @@
     "validation_description": "Some of the provided information is invalid.",
     "validation_hint": "Review the highlighted fields and correct any errors.",
     "retry": "Retry",
+    "try_again": "Try again",
     "dismiss": "Dismiss",
     "details": "Show details",
     "hide_details": "Hide details"
+  },
+  "explorer": {
+    "view_on_explorer": "View on Stellar Explorer"
+  },
+  "toast": {
+    "resource_url_label": "Resource URL"
+  },
+  "time": {
+    "just_now": "just now",
+    "minutes_ago": "{{count}} min ago",
+    "hours_ago": "{{count}} h ago",
+    "days_ago": "{{count}} d ago"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",

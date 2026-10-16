@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useBuyResource } from "../hooks/useBuyResource.js";
-import { FREIGHTER_INSTALL_URL } from "../lib/freighter.js";
-import { safeExternalUrl } from "../lib/safeExternalUrl.js";
+import { FREIGHTER_INSTALL_URL, FREIGHTER_NOT_FOUND_CODE, type WalletErrorCode } from "../lib/freighter.js";
+import { safeExternalUrl } from "../lib/safeUrl.js";
 import { formatPrice, shortAddress } from "./ResourceCard.js";
 
 interface BuyModalProps {
@@ -21,6 +21,8 @@ interface BuyModalProps {
   connecting?: boolean;
   /** Last wallet connection error, shown inline. */
   walletError?: string | null;
+  /** Machine-readable error code for the last wallet connection error. */
+  walletErrorCode?: WalletErrorCode | null;
 }
 
 /**
@@ -40,9 +42,10 @@ export function BuyModal({
   onConnect,
   connecting = false,
   walletError,
+  walletErrorCode,
 }: BuyModalProps) {
   const { t } = useTranslation();
-  const { status, result, error, buy, reset } = useBuyResource(walletAddress);
+  const { status, result, error, errorCode, buy, reset } = useBuyResource(walletAddress);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const displayPrice = formatPrice(price);
@@ -148,7 +151,7 @@ export function BuyModal({
                   {walletError && (
                     <p role="alert" className="text-xs text-danger">
                       {walletError}
-                      {/not found/i.test(walletError) && (
+                      {walletErrorCode === FREIGHTER_NOT_FOUND_CODE && (
                         <>
                           {" "}
                           <a href={FREIGHTER_INSTALL_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
@@ -233,7 +236,19 @@ export function BuyModal({
                   <circle cx="8" cy="8" r="6.25" />
                   <path d="M8 5v3.5M8 11h.01" />
                 </svg>
-                <p>{error}</p>
+                <div>
+                  <p>{error}</p>
+                  {errorCode === FREIGHTER_NOT_FOUND_CODE && (
+                    <a
+                      href={FREIGHTER_INSTALL_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block font-semibold underline"
+                    >
+                      {t("app.install_freighter")} ↗
+                    </a>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => buy(accessUrl)}

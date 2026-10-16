@@ -46,6 +46,7 @@
     "publish_cta": "Publicar un recurso",
     "no_matches": "Ningún recurso coincide con sus filtros.",
     "clear_filters": "Limpiar filtros",
+    "toggle_filters": "Alternar filtros",
     "preview": "Vista previa",
     "buy": "Comprar",
     "copy_url": "Copiar URL",
@@ -53,6 +54,23 @@
     "copied_toast": "URL del recurso copiada al portapapeles",
     "clipboard_fallback": "Portapapeles no disponible — copie la URL a continuación:",
     "search_label": "Buscar recursos",
+    "search_placeholder": "Buscar por título…",
+    "search_results": "Resultados de búsqueda",
+    "filter_verification_label": "Filtrar por estado de verificación",
+    "all_statuses": "Todos los estados",
+    "filter_type_label": "Filtrar por tipo de recurso",
+    "all_types": "Todos los tipos",
+    "min_price_label": "Precio mínimo en USDC",
+    "min_price_placeholder": "Mín",
+    "max_price_label": "Precio máximo en USDC",
+    "max_price_placeholder": "Máx",
+    "filtered_of_total": "de {{total}}",
+    "resources_count_one": "recurso",
+    "resources_count_other": "recursos",
+    "loading_resources": "Cargando recursos…",
+    "stale_banner_title": "Sin conexión — el catálogo puede estar desactualizado.",
+    "stale_banner_with_time": "Mostrando el catálogo en caché de {{time}}. Conéctese para actualizar.",
+    "stale_banner_no_time": "Mostrando el catálogo en caché. Conéctese para actualizar.",
     "by_publisher": "por {{name}}",
     "view_tx": "Ver tx",
     "off_chain": "fuera de cadena",
@@ -151,9 +169,22 @@
     "validation_description": "Parte de la información proporcionada no es válida.",
     "validation_hint": "Revise los campos resaltados y corrija los errores.",
     "retry": "Reintentar",
+    "try_again": "Intentar de nuevo",
     "dismiss": "Descartar",
     "details": "Mostrar detalles",
     "hide_details": "Ocultar detalles"
+  },
+  "explorer": {
+    "view_on_explorer": "Ver en Stellar Explorer"
+  },
+  "toast": {
+    "resource_url_label": "URL del recurso"
+  },
+  "time": {
+    "just_now": "ahora mismo",
+    "minutes_ago": "hace {{count}} min",
+    "hours_ago": "hace {{count}} h",
+    "days_ago": "hace {{count}} d"
   },
   "buy": {
     "connect": "Conectar Freighter"
