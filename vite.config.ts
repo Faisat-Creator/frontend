@@ -46,7 +46,10 @@ export default defineConfig(({ mode }) => {
       minify: "terser",
       terserOptions: {
         compress: {
-          drop_console: true, // Remove console logs in production
+          // Keep console.error as the last-resort signal when Sentry itself
+          // cannot initialize. Remove routine diagnostic output only.
+          drop_console: false,
+          pure_funcs: ["console.log", "console.info", "console.debug", "console.warn"],
         },
       },
       // Split vendor libraries into separate, cache-friendly chunks
@@ -93,7 +96,9 @@ export default defineConfig(({ mode }) => {
 
       // Progressive Web App support
       VitePWA({
-        registerType: "autoUpdate",
+        // A waiting worker must not reload an active purchase or form flow.
+        registerType: "prompt",
+        injectRegister: false,
         includeAssets: ["icon.svg"],
         manifest: {
           name: "SynapsVault",
@@ -119,8 +124,8 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           navigateFallback: "index.html",
           cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
+          clientsClaim: false,
+          skipWaiting: false,
           runtimeCaching: [
             // Cache catalog API responses
             {
