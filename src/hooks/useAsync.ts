@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type AsyncStatus = "idle" | "loading" | "success" | "error";
 
@@ -25,7 +25,6 @@ export function useAsync<T>(
   const [status, setStatus] = useState<AsyncStatus>("idle");
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const retryCount = useRef(0);
 
   const run = useCallback(() => {
     const controller = new AbortController();
@@ -59,7 +58,6 @@ export function useAsync<T>(
   }, [run]);
 
   const retry = useCallback(() => {
-    retryCount.current += 1;
     run();
   }, [run]);
 

@@ -182,6 +182,35 @@ export default function App() {
 
   const resources = useMemo((): Resource[] => {
     if (!rawResources) return [];
+    
+    // Clear overrides that don't match the current server state
+    setOverrides((prev) => {
+      const reconciled: Record<string, Partial<Resource>> = {};
+      for (const [id, override] of Object.entries(prev)) {
+        const serverResource = rawResources.find((r) => r.id === id);
+        if (!serverResource) continue;
+        
+        const stillValid: Partial<Resource> = {};
+        // Keep price override only if server hasn't changed
+        if (override.price !== undefined && override.price !== serverResource.price) {
+          stillValid.price = override.price;
+        }
+        // Keep owner override only if server hasn't changed
+        if (override.walletAddress !== undefined && override.walletAddress !== serverResource.walletAddress) {
+          stillValid.walletAddress = override.walletAddress;
+        }
+        // Keep other overrides
+        if (override.onchainStatus !== undefined && override.onchainStatus !== serverResource.onchainStatus) {
+          stillValid.onchainStatus = override.onchainStatus;
+        }
+        
+        if (Object.keys(stillValid).length > 0) {
+          reconciled[id] = stillValid;
+        }
+      }
+      return reconciled;
+    });
+    
     return rawResources.map((r) => ({ ...r, ...(overrides[r.id] ?? {}) }));
   }, [rawResources, overrides]);
 
