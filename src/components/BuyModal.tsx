@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useBuyResource } from "../hooks/useBuyResource.js";
 import { FREIGHTER_INSTALL_URL, FREIGHTER_NOT_FOUND_CODE, type WalletErrorCode } from "../lib/freighter.js";
 import { safeExternalUrl } from "../lib/safeUrl.js";
+import { useDialogA11y } from "../hooks/useDialogA11y.js";
 import { formatPrice, shortAddress } from "./ResourceCard.js";
 
 interface BuyModalProps {
@@ -46,28 +47,20 @@ export function BuyModal({
 }: BuyModalProps) {
   const { t } = useTranslation();
   const { status, result, error, errorCode, buy, reset } = useBuyResource(walletAddress);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
   const displayPrice = formatPrice(price);
   const safeResultUrl = result?.url ? safeExternalUrl(result.url) : null;
 
   // Block close mid-payment so a half-signed flow isn't abandoned silently.
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (status === "paying") return;
     reset();
     onClose();
-  };
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Mirror handleClose: don't allow Escape to abandon an in-flight payment.
-      if (e.key !== "Escape" || status === "paying") return;
-      reset();
-      onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
   }, [status, reset, onClose]);
+
+  const dialogRef = useDialogA11y<HTMLDivElement>({
+    onClose: handleClose,
+    canClose: () => status !== "paying",
+  });
 
   return (
     <div

@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { signPublisherRequestHeaders } from './requestSignature';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  EMPTY_BODY_HASH,
+  assertSecureContext,
   buildCanonicalString,
-  signRequest,
-  generateIdempotencyKey,
-  withIdempotencyKey,
-} from './requestSignature';
+  hashRequestBody,
+  signPublisherRequestHeaders,
+} from "./requestSignature.js";
 
-describe('signPublisherRequestHeaders', () => {
+describe("requestSignature", () => {
   const originalIsSecureContext = Object.getOwnPropertyDescriptor(
     window,
-    'isSecureContext',
+    "isSecureContext",
   );
-  const originalSubtle = Object.getOwnPropertyDescriptor(crypto, 'subtle');
+  const originalSubtle = Object.getOwnPropertyDescriptor(crypto, "subtle");
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -20,268 +20,184 @@ describe('signPublisherRequestHeaders', () => {
 
   afterEach(() => {
     if (originalIsSecureContext) {
-      Object.defineProperty(window, 'isSecureContext', originalIsSecureContext);
+      Object.defineProperty(window, "isSecureContext", originalIsSecureContext);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (window as any).isSecureContext;
     }
 
     if (originalSubtle) {
-      Object.defineProperty(crypto, 'subtle', originalSubtle);
+      Object.defineProperty(crypto, "subtle", originalSubtle);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (crypto as any).subtle;
     }
   });
 
-  it('rejects with a descriptive secure-context error when window.isSecureContext is false', async () => {
-    Object.defineProperty(window, 'isSecureContext', {
-      configurable: true,
-      get: () => false,
-    });
-
-    await expect(
-      signPublisherRequestHeaders({
-        method: 'GET',
-        url: 'https://example.com/publish',
-        body: '',
-      }),
-    ).rejects.toThrow(/secure context/i);
-  });
-
-  it('rejects with a descriptive secure-context error when crypto.subtle is unavailable', async () => {
-    Object.defineProperty(window, 'isSecureContext', {
-      configurable: true,
-      get: () => true,
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (crypto as any).subtle;
-
-    await expect(
-      signPublisherRequestHeaders({
-        method: 'GET',
-        url: 'https://example.com/publish',
-        body: '',
-      }),
-    ).rejects.toThrow(/secure context/i);
-  });
-
-  it('signs request headers successfully in a secure context', async () => {
-    Object.defineProperty(window, 'isSecureContext', {
-      configurable: true,
-      get: () => true,
-    });
-
-    const headers = await signPublisherRequestHeaders({
-      method: 'POST',
-      url: 'https://example.com/publish',
-      body: JSON.stringify({ hello: 'world' }),
-    });
-
-    expect(headers).toBeDefined();
-    expect(typeof headers).toBe('object');
-    expect(Object.keys(headers).length).toBeGreaterThan(0);
-  });
-});
-
-describe('requestSignature', () => {
-  describe('generateIdempotencyKey', () => {
-    it('returns a non-empty string', () => {
-      const key = generateIdempotencyKey();
-      expect(typeof key).toBe('string');
-      expect(key.length).toBeGreaterThan(0);
-    });
-
-    it('returns unique keys across invocations', () => {
-      const keys = new Set<string>();
-      for (let i = 0; i < 100; i++) {
-        keys.add(generateIdempotencyKey());
-      }
-      expect(keys.size).toBe(100);
-    });
-  });
-
-  describe('buildCanonicalString', () => {
-    it('includes the idempotency key when provided', () => {
-      const canonical = buildCanonicalString({
-        method: 'POST',
-        path: '/api/publish',
-        body: '{"assetId":"a1"}',
-        idempotencyKey: 'key-123',
+  describe("assertSecureContext", () => {
+    it("rejects with a descriptive error when window.isSecureContext is false", () => {
+      Object.defineProperty(window, "isSecureContext", {
+        configurable: true,
+        get: () => false,
       });
-      expect(canonical).toContain('key-123');
+      expect(() => assertSecureContext()).toThrow(/secure context/i);
     });
 
-    it('produces different canonical strings for different idempotency keys', () => {
+    it("rejects with a descriptive error when crypto.subtle is unavailable", () => {
+      Object.defineProperty(window, "isSecureContext", {
+        configurable: true,
+        get: () => true,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (crypto as any).subtle;
+      expect(() => assertSecureContext()).toThrow(/secure context/i);
+    });
+  });
+
+  describe("buildCanonicalString", () => {
+    it("includes the idempotency key when provided", () => {
+      const canonical = buildCanonicalString({
+        method: "POST",
+        path: "/api/publish",
+        timestamp: "1234567890",
+        bodyHash: "abc123",
+        idempotencyKey: "key-123",
+      });
+      expect(canonical).toContain("key-123");
+    });
+
+    it("produces different canonical strings for different idempotency keys", () => {
       const base = {
-        method: 'POST',
-        path: '/api/publish',
-        body: '{"assetId":"a1"}',
+        method: "POST",
+        path: "/api/publish",
+        timestamp: "1234567890",
+        bodyHash: "abc123",
       };
-      const a = buildCanonicalString({ ...base, idempotencyKey: 'key-a' });
-      const b = buildCanonicalString({ ...base, idempotencyKey: 'key-b' });
+      const a = buildCanonicalString({ ...base, idempotencyKey: "key-a" });
+      const b = buildCanonicalString({ ...base, idempotencyKey: "key-b" });
       expect(a).not.toEqual(b);
     });
 
-    it('produces the same canonical string for identical inputs', () => {
+    it("produces the same canonical string for identical inputs", () => {
       const input = {
-        method: 'POST',
-        path: '/api/publish',
-        body: '{"assetId":"a1"}',
-        idempotencyKey: 'key-123',
+        method: "POST",
+        path: "/api/publish",
+        timestamp: "1234567890",
+        bodyHash: "abc123",
+        idempotencyKey: "key-123",
       };
       expect(buildCanonicalString(input)).toEqual(buildCanonicalString(input));
     });
-  });
 
-  describe('signRequest', () => {
-    it('produces a signature that changes when the idempotency key changes', () => {
-      const base = {
-        method: 'POST',
-        path: '/api/publish',
-        body: '{"assetId":"a1"}',
-        secret: 'secret',
-      };
-      const a = signRequest({ ...base, idempotencyKey: 'key-a' });
-      const b = signRequest({ ...base, idempotencyKey: 'key-b' });
-      expect(a).not.toEqual(b);
-    });
-
-    it('produces a stable signature for identical inputs', () => {
-      const input = {
-        method: 'POST',
-        path: '/api/publish',
-        body: '{"assetId":"a1"}',
-        secret: 'secret',
-        idempotencyKey: 'key-123',
-      };
-      expect(signRequest(input)).toEqual(signRequest(input));
+    it("joins parts in order: method, path, timestamp, bodyHash, idempotencyKey?", () => {
+      const canonical = buildCanonicalString({
+        method: "post",
+        path: "/api/test",
+        timestamp: "111",
+        bodyHash: "hash",
+      });
+      expect(canonical).toBe("POST\n/api/test\n111\nhash");
+      const canonicalWithKey = buildCanonicalString({
+        method: "POST",
+        path: "/api/test",
+        timestamp: "111",
+        bodyHash: "hash",
+        idempotencyKey: "k",
+      });
+      expect(canonicalWithKey).toBe("POST\n/api/test\n111\nhash\nk");
     });
   });
 
-  describe('withIdempotencyKey', () => {
-    const originalFetch = globalThis.fetch;
-
-    beforeEach(() => {
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      }) as unknown as typeof fetch;
+  describe("hashRequestBody", () => {
+    it("returns a deterministic hex string for the same body", async () => {
+      const body = '{"hello":"world"}';
+      const h1 = await hashRequestBody(body);
+      const h2 = await hashRequestBody(body);
+      expect(h1).toBe(h2);
+      expect(h1).toMatch(/^[0-9a-f]{64}$/);
     });
 
-    afterEach(() => {
-      globalThis.fetch = originalFetch;
-      vi.restoreAllMocks();
+    it("returns different hashes for different bodies", async () => {
+      const h1 = await hashRequestBody('{"a":1}');
+      const h2 = await hashRequestBody('{"a":2}');
+      expect(h1).not.toBe(h2);
     });
+  });
 
-    const mutatingFlows: Array<{
-      name: string;
-      method: string;
-      path: string;
-      body: Record<string, unknown>;
-    }> = [
-      {
-        name: 'publish',
-        method: 'POST',
-        path: '/api/publish',
-        body: { assetId: 'a1' },
-      },
-      {
-        name: 'price change',
-        method: 'POST',
-        path: '/api/price',
-        body: { assetId: 'a1', price: 100 },
-      },
-      {
-        name: 'transfer',
-        method: 'POST',
-        path: '/api/transfer',
-        body: { assetId: 'a1', to: '0xabc' },
-      },
-      {
-        name: 'register',
-        method: 'POST',
-        path: '/api/register',
-        body: { assetId: 'a1', owner: '0xdef' },
-      },
-    ];
-
-    it.each(mutatingFlows)(
-      'sends an Idempotency-Key header for the $name flow',
-      async ({ method, path, body }) => {
-        await withIdempotencyKey({ method, path, body, secret: 'secret' });
-
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-        const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock
-          .calls[0];
-        const headers = init?.headers as Record<string, string>;
-        expect(headers).toBeDefined();
-        expect(headers['Idempotency-Key']).toBeDefined();
-        expect(typeof headers['Idempotency-Key']).toBe('string');
-        expect(headers['Idempotency-Key'].length).toBeGreaterThan(0);
-      },
-    );
-
-    it.each(mutatingFlows)(
-      'includes the Idempotency-Key in the signature for the $name flow',
-      async ({ method, path, body }) => {
-        await withIdempotencyKey({ method, path, body, secret: 'secret' });
-
-        const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock
-          .calls[0];
-        const headers = init?.headers as Record<string, string>;
-        const idempotencyKey = headers['Idempotency-Key'];
-        const signature = headers['X-Signature'];
-
-        expect(idempotencyKey).toBeDefined();
-        expect(signature).toBeDefined();
-
-        const expectedSignature = signRequest({
-          method,
-          path,
-          body: JSON.stringify(body),
-          secret: 'secret',
-          idempotencyKey,
-        });
-        expect(signature).toEqual(expectedSignature);
-      },
-    );
-
-    it.each(mutatingFlows)(
-      'generates a fresh Idempotency-Key per request for the $name flow',
-      async ({ method, path, body }) => {
-        await withIdempotencyKey({ method, path, body, secret: 'secret' });
-        await withIdempotencyKey({ method, path, body, secret: 'secret' });
-
-        const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls;
-        expect(calls).toHaveLength(2);
-
-        const firstKey = (calls[0][1]?.headers as Record<string, string>)[
-          'Idempotency-Key'
-        ];
-        const secondKey = (calls[1][1]?.headers as Record<string, string>)[
-          'Idempotency-Key'
-        ];
-
-        expect(firstKey).toBeDefined();
-        expect(secondKey).toBeDefined();
-        expect(firstKey).not.toEqual(secondKey);
-      },
-    );
-
-    it('does not send an Idempotency-Key for non-mutating requests', async () => {
-      await withIdempotencyKey({
-        method: 'GET',
-        path: '/api/assets/a1',
-        secret: 'secret',
+  describe("signPublisherRequestHeaders", () => {
+    it("produces X-Timestamp and X-Signature in secure context", async () => {
+      Object.defineProperty(window, "isSecureContext", {
+        configurable: true,
+        get: () => true,
       });
 
-      const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock
-        .calls[0];
-      const headers = (init?.headers ?? {}) as Record<string, string>;
-      expect(headers['Idempotency-Key']).toBeUndefined();
+      const headers = await signPublisherRequestHeaders({
+        apiKey: "test-key",
+        method: "POST",
+        path: "/api/publish",
+        body: '{"assetId":"a1"}',
+      });
+
+      expect(headers).toBeDefined();
+      expect(headers["X-Timestamp"]).toBeDefined();
+      expect(headers["X-Signature"]).toBeDefined();
+      expect(typeof headers["X-Timestamp"]).toBe("string");
+      expect(typeof headers["X-Signature"]).toBe("string");
+    });
+
+    it("changes signature when idempotency key changes (same body/method/path)", async () => {
+      Object.defineProperty(window, "isSecureContext", {
+        configurable: true,
+        get: () => true,
+      });
+
+      const base = {
+        apiKey: "secret",
+        method: "POST",
+        path: "/api/publish",
+        body: '{"assetId":"a1"}',
+      };
+
+      const h1 = await signPublisherRequestHeaders({ ...base, idempotencyKey: "k1" });
+      const h2 = await signPublisherRequestHeaders({ ...base, idempotencyKey: "k2" });
+      expect(h1["X-Signature"]).not.toBe(h2["X-Signature"]);
+    });
+
+    it("produces stable headers for identical inputs in the same second window", async () => {
+      Object.defineProperty(window, "isSecureContext", {
+        configurable: true,
+        get: () => true,
+      });
+
+      const input = {
+        apiKey: "secret",
+        method: "POST",
+        path: "/api/publish",
+        body: '{"assetId":"a1"}',
+        idempotencyKey: "key-123",
+      };
+      const h1 = await signPublisherRequestHeaders(input);
+      const h2 = await signPublisherRequestHeaders(input);
+      expect(h1["X-Signature"]).toBe(h2["X-Signature"]);
+      expect(h1["X-Timestamp"]).toBe(h2["X-Timestamp"]);
+    });
+
+    it("uses EMPTY_BODY_HASH when no body is provided", async () => {
+      Object.defineProperty(window, "isSecureContext", {
+        configurable: true,
+        get: () => true,
+      });
+
+      const emptyBodyHash = EMPTY_BODY_HASH;
+      expect(emptyBodyHash).toMatch(/^[0-9a-f]{64}$/);
+
+      const headers = await signPublisherRequestHeaders({
+        apiKey: "secret",
+        method: "POST",
+        path: "/api/publish",
+      });
+
+      expect(headers["X-Signature"]).toBeDefined();
     });
   });
 });

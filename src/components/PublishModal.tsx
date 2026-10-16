@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { publishLinkResource, publishFileResource } from "../api/resources.js";
+import { useDialogA11y } from "../hooks/useDialogA11y.js";
 
 interface Props {
   apiKey: string;
@@ -79,7 +80,7 @@ export function PublishModal({ apiKey, onClose, onPublished }: Props) {
 
   if (step === "success") {
     return (
-      <Overlay onClose={onClose}>
+      <Overlay onClose={onClose} labelledBy="publish-success-title">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success-soft">
             <svg
@@ -92,6 +93,9 @@ export function PublishModal({ apiKey, onClose, onPublished }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
+          <h3 id="publish-success-title" className="text-lg font-semibold text-fg">
+            Published!
+          </h3>
           <h3 className="text-lg font-semibold text-fg">{t("publish.success_title")}</h3>
           <p className="mt-2 text-sm text-fg-muted">
             {t("publish.success_description")}
@@ -108,6 +112,10 @@ export function PublishModal({ apiKey, onClose, onPublished }: Props) {
   }
 
   return (
+    <Overlay onClose={onClose} labelledBy="publish-title" canClose={() => step !== "submitting"}>
+      <h2 id="publish-title" className="mb-4 text-lg font-semibold text-fg">
+        Publish a Resource
+      </h2>
     <Overlay onClose={onClose}>
       <h2 className="mb-4 text-lg font-semibold text-fg">{t("publish.title")}</h2>
 
@@ -211,14 +219,32 @@ export function PublishModal({ apiKey, onClose, onPublished }: Props) {
   );
 }
 
-function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Overlay({
+  children,
+  onClose,
+  labelledBy,
+  canClose,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  labelledBy: string;
+  canClose?: () => boolean;
+}) {
+  const dialogRef = useDialogA11y<HTMLDivElement>({ onClose, canClose });
+
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div
-        className="relative w-full max-w-none overflow-y-auto rounded-none bg-surface-raised p-4 shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-6"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        tabIndex={-1}
+        className="relative w-full max-w-none overflow-y-auto rounded-none bg-surface-raised p-4 shadow-xl outline-none sm:max-w-lg sm:rounded-2xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          type="button"
           onClick={onClose}
           className="absolute right-4 top-4 text-fg-subtle hover:text-fg"
           aria-label={t("publish.close")}
