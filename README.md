@@ -43,7 +43,7 @@ SynapsVault-contracts  (Soroban — vault-registry, access-lease, subscription)
 | i18n | i18next (English + Español included) |
 | Testing | Vitest + React Testing Library |
 | Error tracking | Sentry |
-| Deployment | Vercel (via GitHub Actions) |
+| CI | GitHub Actions (lint, typecheck, test, build, Docker smoke test) |
 
 ## Quick start
 
@@ -93,17 +93,13 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full branch strategy and commit
 
 ### CI/CD pipeline
 
-Every push and PR runs three jobs: **lint + typecheck + test**, **build + bundle
+Every push to `main` or `dev`, and every PR targeting those branches, runs three jobs: **lint + typecheck + test**, **build + bundle
 budgets** (initial JS ≤ 250 KB gz, any chunk ≤ 800 KB gz, total ≤ 1 MB gz, and no
 circular chunk imports — see `scripts/check-bundle-size.mjs`), and a **Docker
 smoke test** that boots nginx and checks `/health` and SPA routing.
 
 ```
-Push to feat/* ──► CI (lint + typecheck + test + build + docker)
-                         │
-Merge to dev   ──► CI + preview deploy
-                         │
-Merge to main  ──► CI + production deploy (Vercel)
+Push to main/dev or PR to main/dev ──► CI (lint + typecheck + test + build + docker)
 ```
 
 ## Design system
