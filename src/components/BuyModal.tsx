@@ -79,11 +79,11 @@ export function BuyModal({
       >
         <div className="synapse-modal__header">
           <h2 id="buy-title" className="synapse-modal__title">
-            Buy resource
+            {t("buy.title")}
           </h2>
           <button
             onClick={handleClose}
-            aria-label="Close"
+            aria-label={t("buy.close")}
             disabled={status === "paying"}
             className="synapse-icon-btn disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -100,14 +100,14 @@ export function BuyModal({
             <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">{displayPrice} USDC</p>
             <dl className="mt-3 space-y-1.5 border-t border-line pt-3 text-xs">
               <div className="flex justify-between gap-3">
-                <dt className="text-fg-muted">Pays to</dt>
+                <dt className="text-fg-muted">{t("buy.pays_to")}</dt>
                 <dd className="font-mono text-fg" title={recipient}>
                   {shortAddress(recipient)}
                 </dd>
               </div>
               {walletAddress && (
                 <div className="flex justify-between gap-3">
-                  <dt className="text-fg-muted">From</dt>
+                  <dt className="text-fg-muted">{t("buy.from")}</dt>
                   <dd className="font-mono text-fg" title={walletAddress}>
                     {shortAddress(walletAddress)}
                   </dd>
@@ -122,7 +122,7 @@ export function BuyModal({
               {!walletAddress && (
                 <div className="space-y-3 rounded-xl border border-warning/30 bg-warning-soft p-3.5">
                   <p className="text-sm text-warning">
-                    Connect your Freighter wallet to pay, or copy the access URL to use another x402 client.
+                    {t("buy.connect_prompt")}
                   </p>
                   {onConnect && (
                     <button
@@ -154,7 +154,7 @@ export function BuyModal({
               {status === "paying" ? (
                 <div role="status" aria-busy="true" className="flex items-center gap-3 text-sm text-fg-muted">
                   <span className="synapse-spinner" aria-hidden="true" />
-                  Approve in Freighter and wait for settlement…
+                  {t("buy.approve_and_wait")}
                 </div>
               ) : (
                 <button
@@ -162,7 +162,7 @@ export function BuyModal({
                   disabled={!walletAddress}
                   className="synapse-btn synapse-btn--primary synapse-btn--lg w-full"
                 >
-                  Pay {displayPrice} USDC
+                  {t("buy.pay", { price: displayPrice })}
                 </button>
               )}
             </>
@@ -177,24 +177,24 @@ export function BuyModal({
                     <path d="M3.5 8.5l3 3 6-7" />
                   </svg>
                 </span>
-                Payment successful
+                {t("buy.payment_success")}
               </div>
 
               {safeResultUrl ? (
                 <a href={safeResultUrl} target="_blank" rel="noopener noreferrer" className="synapse-btn synapse-btn--primary w-full">
-                  Open resource ↗
+                  {t("buy.open_resource")} ↗
                 </a>
               ) : (
                 result.url && (
                   <p className="text-xs text-fg-subtle">
-                    The resource link could not be opened safely.
+                    {t("buy.unsafe_resource")}
                   </p>
                 )
               )}
 
               {result.download && (
                 <a href={result.download.objectUrl} download={result.download.filename} className="synapse-btn synapse-btn--primary w-full">
-                  Download {result.download.filename}
+                  {t("buy.download", { filename: result.download.filename })}
                 </a>
               )}
 
@@ -205,11 +205,11 @@ export function BuyModal({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-accent-text hover:underline"
                 >
-                  View transaction on Stellar Explorer ↗
+                  {t("buy.view_transaction")} ↗
                 </a>
               ) : (
                 <p className="text-xs text-fg-subtle">
-                  Settlement confirmed. Transaction hash unavailable for this payment.
+                  {t("buy.settlement_no_hash")}
                 </p>
               )}
             </div>
@@ -242,7 +242,7 @@ export function BuyModal({
                 disabled={!walletAddress}
                 className="synapse-btn synapse-btn--primary w-full"
               >
-                Try again
+                {t("buy.try_again")}
               </button>
             </div>
           )}
@@ -250,7 +250,7 @@ export function BuyModal({
           {/* ── Copy URL fallback (always available) ───────────────────────── */}
           <div className="border-t border-line pt-4">
             <button onClick={() => onCopyUrl(accessUrl)} className="synapse-btn synapse-btn--ghost w-full">
-              Copy access URL instead
+              {t("buy.copy_access_url")}
             </button>
           </div>
         </div>
