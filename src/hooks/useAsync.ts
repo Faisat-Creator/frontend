@@ -50,9 +50,9 @@ export function useAsync<T>(
       });
 
     return () => controller.abort();
-    // `deps` is the caller's dependency list, forwarded like useEffect's.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+    // deps is intentionally spread here: useCallback re-runs whenever the
+    // caller's dependency list changes, mirroring useEffect semantics.
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return run();
