@@ -7,6 +7,7 @@ const paidFetch = vi.fn();
 vi.mock("@stellar/freighter-api", () => ({
   signAuthEntry: vi.fn(),
   signTransaction: vi.fn(),
+  isConnected: vi.fn(),
 }));
 
 vi.mock("@x402/stellar/exact/client", () => ({
@@ -23,7 +24,9 @@ vi.mock("@x402/fetch", () => ({
   decodePaymentResponseHeader: (h: string) => JSON.parse(h),
 }));
 
+import { isConnected } from "@stellar/freighter-api";
 import { purchaseResource, PurchaseError, expectedNetworkPassphrase } from "./x402Buy.js";
+import { FREIGHTER_NOT_FOUND_CODE } from "./freighter.js";
 
 function response(
   body: unknown,
@@ -44,6 +47,9 @@ describe("purchaseResource (#219)", () => {
   // beforeEach is run by Vitest as a teardown hook.
   beforeEach(() => {
     paidFetch.mockReset();
+    // Default to an installed extension; individual tests override this.
+    vi.mocked(isConnected).mockReset();
+    vi.mocked(isConnected).mockResolvedValue({ isConnected: true });
   });
 
   it("returns link url, receipt, and settlement tx hash on success", async () => {
@@ -115,6 +121,16 @@ describe("purchaseResource (#219)", () => {
     const err = await purchaseResource("https://api/resources/r1", "GBUYER").catch((e) => e);
     expect(err).toBeInstanceOf(PurchaseError);
     expect(err.message).toBe("User declined access");
+  });
+
+  it("throws a coded not-found error when Freighter is not installed (#100)", async () => {
+    vi.mocked(isConnected).mockResolvedValue({ isConnected: false });
+
+    const err = await purchaseResource("https://api/resources/r1", "GBUYER").catch((e) => e);
+
+    expect(err).toBeInstanceOf(PurchaseError);
+    expect(err.code).toBe(FREIGHTER_NOT_FOUND_CODE);
+    expect(paidFetch).not.toHaveBeenCalled();
   });
 
   it("exposes the expected network passphrase for the preflight check", () => {
