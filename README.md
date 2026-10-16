@@ -84,6 +84,8 @@ docker run -p 8080:80 synapsvault-frontend
 | `VITE_API_URL` | Production | Backend API base URL. Leave empty in development: the dev server proxies all API routes to `VITE_DEV_PROXY_TARGET` (default `http://localhost:3000`). **Must** be set for production builds, or API calls return the app's HTML. |
 | `VITE_DEV_PROXY_TARGET` | ❌ | Backend the dev server proxies to (default `http://localhost:3000`) |
 | `VITE_API_KEY` | Publisher only | API key for creator features |
+
+> **Security warning:** `VITE_API_KEY` is bundled into client-side JavaScript and is visible to every visitor. Do not use it for a secret publisher credential.
 | `VITE_NETWORK` | ✅ | `testnet` or `mainnet`: payments, signing, explorer links |
 | `VITE_SENTRY_DSN` | ❌ | Sentry DSN for error tracking |
 

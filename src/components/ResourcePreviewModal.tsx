@@ -110,17 +110,6 @@ export function ResourcePreviewModal({
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Focus management
-  useEffect(() => {
-    previousFocusRef.current = document.activeElement as HTMLElement;
-    if (dialogRef.current) {
-      dialogRef.current.focus();
-    }
-    return () => {
-      if (previousFocusRef.current) {
-        previousFocusRef.current.focus();
-      }
-    };
-  }, []);
 
   // Escape key handler
   useEffect(() => {
