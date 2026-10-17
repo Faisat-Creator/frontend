@@ -25,9 +25,13 @@ export function useAsync<T>(
   const [status, setStatus] = useState<AsyncStatus>("idle");
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const retryCount = useRef(0);
+  const controllerRef = useRef<AbortController | null>(null);
 
   const run = useCallback(() => {
+    controllerRef.current?.abort();
     const controller = new AbortController();
+    controllerRef.current = controller;
     setStatus("loading");
     setError(null);
 
@@ -48,10 +52,19 @@ export function useAsync<T>(
         setStatus("error");
       });
 
-    return () => controller.abort();
+    return () => {
+      // retry() replaces the controller without rerunning the effect. Cleanup
+      // must therefore cancel whichever request is current at unmount.
+      controllerRef.current?.abort();
+      controllerRef.current = null;
+    };
     // `deps` is the caller's dependency list, forwarded like useEffect's.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+    return () => controller.abort();
+    // deps is intentionally spread here: useCallback re-runs whenever the
+    // caller's dependency list changes, mirroring useEffect semantics.
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return run();

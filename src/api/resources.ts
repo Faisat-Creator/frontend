@@ -56,7 +56,7 @@ export async function fetchResourceMeta(id: string, signal?: AbortSignal): Promi
   return getJson<ResourceMeta>(`/resources/${id}/meta`, "Failed to load resource preview", { signal });
 }
 
-export async function fetchCatalog(filters?: CatalogFilters): Promise<unknown[]> {
+export async function fetchCatalog(filters?: CatalogFilters, signal?: AbortSignal): Promise<unknown[]> {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
   if (filters?.minPrice) params.set("minPrice", filters.minPrice);
@@ -67,7 +67,12 @@ export async function fetchCatalog(filters?: CatalogFilters): Promise<unknown[]>
     params.set("resourceType", filters.resourceType);
 
   const qs = params.toString();
-  return getJson<unknown[]>(`/resources${qs ? `?${qs}` : ""}`, "Couldn't load the catalog", undefined, isArray);
+  return getJson<unknown[]>(
+    `/resources${qs ? `?${qs}` : ""}`,
+    "Couldn't load the catalog",
+    { signal },
+    isArray,
+  );
 }
 
 /** Resources owned by the API key holder. Callers supply the row shape. */
