@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.js";
 import { API_BASE, STELLAR_NETWORK } from "./lib/config.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
+import { captureException } from "./lib/sentry.js";
 import "./i18n/config.js";
 import "./index.css";
 
@@ -37,7 +38,7 @@ const root = ReactDOM.createRoot(rootElement);
 
 root.render(
   <React.StrictMode>
-    <ErrorBoundary>
+    <ErrorBoundary onError={captureException}>
       <App />
     </ErrorBoundary>
   </React.StrictMode>,
