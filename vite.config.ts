@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => {
       // Warn if chunks exceed 800KB (gzipped)
       chunkSizeWarningLimit: 800,
       // Generate source maps for production debugging
-      sourcemap: true,
+      sourcemap: false, // no public source maps; upload to Sentry if stack traces are needed
       // Optimize for production
       minify: "terser",
       terserOptions: {
@@ -127,9 +127,13 @@ export default defineConfig(({ mode }) => {
           clientsClaim: false,
           skipWaiting: false,
           runtimeCaching: [
-            // Cache catalog API responses
+            // Cache public catalog API responses only (never key-authenticated or signed GETs)
             {
-              urlPattern: catalogUrlPattern,
+              urlPattern: ({ url, request }) =>
+                catalogUrlPattern.test(url.href) &&
+                !request.headers.has("x-api-key") &&
+                !request.headers.has("authorization") &&
+                !request.headers.has("x-signature"),
               handler: "NetworkFirst",
               options: {
                 cacheName: "synapsvault-catalog",
