@@ -41,12 +41,15 @@ export default defineConfig(({ mode }) => {
       // Warn if chunks exceed 800KB (gzipped)
       chunkSizeWarningLimit: 800,
       // Generate source maps for production debugging
-      sourcemap: true,
+      sourcemap: false, // no public source maps; upload to Sentry if stack traces are needed
       // Optimize for production
       minify: "terser",
       terserOptions: {
         compress: {
-          drop_console: true, // Remove console logs in production
+          // Keep console.error as the last-resort signal when Sentry itself
+          // cannot initialize. Remove routine diagnostic output only.
+          drop_console: false,
+          pure_funcs: ["console.log", "console.info", "console.debug", "console.warn"],
         },
       },
       // Split vendor libraries into separate, cache-friendly chunks
@@ -93,7 +96,9 @@ export default defineConfig(({ mode }) => {
 
       // Progressive Web App support
       VitePWA({
-        registerType: "autoUpdate",
+        // A waiting worker must not reload an active purchase or form flow.
+        registerType: "prompt",
+        injectRegister: false,
         includeAssets: ["icon.svg"],
         manifest: {
           name: "SynapsVault",
@@ -119,12 +124,16 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           navigateFallback: "index.html",
           cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
+          clientsClaim: false,
+          skipWaiting: false,
           runtimeCaching: [
-            // Cache catalog API responses
+            // Cache public catalog API responses only (never key-authenticated or signed GETs)
             {
-              urlPattern: catalogUrlPattern,
+              urlPattern: ({ url, request }) =>
+                catalogUrlPattern.test(url.href) &&
+                !request.headers.has("x-api-key") &&
+                !request.headers.has("authorization") &&
+                !request.headers.has("x-signature"),
               handler: "NetworkFirst",
               options: {
                 cacheName: "synapsvault-catalog",

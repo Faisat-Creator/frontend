@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { prepareRegisterTx, submitRegisterTx, RegistrationError } from "../api/resources.js";
 import { signWithFreighter } from "../lib/freighter.js";
@@ -24,12 +24,6 @@ export function RegisterModal({ resourceId, apiKey, onClose, onConfirmed }: Regi
   const [networkPassphrase, setNetworkPassphrase] = useState<string>("");
   const [idempotencyKey, setIdempotencyKey] = useState<string>("");
 
-  // Prepare once on open; retries call prepareTransaction() explicitly.
-  React.useEffect(() => {
-    prepareTransaction();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function generateIdempotencyKey(): string {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
       return crypto.randomUUID();
@@ -37,7 +31,8 @@ export function RegisterModal({ resourceId, apiKey, onClose, onConfirmed }: Regi
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  async function prepareTransaction() {
+  // Prepare once on open; retries call prepareTransaction() explicitly.
+  const prepareTransaction = useCallback(async () => {
     try {
       setState("preparing");
       setError("");
@@ -57,7 +52,11 @@ export function RegisterModal({ resourceId, apiKey, onClose, onConfirmed }: Regi
       );
       setState("failed");
     }
-  }
+  }, [resourceId, apiKey, idempotencyKey, t]);
+
+  React.useEffect(() => {
+    prepareTransaction();
+  }, [prepareTransaction]);
 
   async function signAndSubmit() {
     try {

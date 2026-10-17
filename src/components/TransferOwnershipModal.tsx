@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTransferOwnership } from "../hooks/useTransferOwnership.js";
 import { useDialogA11y } from "../hooks/useDialogA11y.js";
 
@@ -28,13 +28,15 @@ export function TransferOwnershipModal({ resourceId, apiKey, onClose, onConfirme
   const busy = ["preparing", "signing", "submitting"].includes(status);
   const dialogRef = useDialogA11y<HTMLDivElement>({ onClose, canClose: () => !busy });
 
+  useEffect(() => {
+    if (status === "confirmed" && newOwner) {
+      onConfirmed(newOwner);
+    }
+  }, [status, newOwner, onConfirmed]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     transferOwnership(newCreator.trim());
-  }
-
-  if (status === "confirmed" && newOwner) {
-    onConfirmed(newOwner);
   }
 
   return (
