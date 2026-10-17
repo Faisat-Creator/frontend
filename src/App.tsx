@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Toast } from "./components/Toast.js";
+import { ServiceWorkerUpdatePrompt } from "./components/ServiceWorkerUpdatePrompt.js";
 import { ResourceGridSkeleton } from "./components/ResourceCardSkeleton.js";
 import { ErrorBanner } from "./components/ErrorBanner.js";
 import { CatalogStaleBanner } from "./components/CatalogStaleBanner.js";
@@ -18,7 +19,7 @@ import { fetchRegistryStatus } from "./api/resources.js";
 import type { CatalogFilters } from "./api/resources.js";
 import { loadLocale } from "./i18n/config.js";
 import { STELLAR_NETWORK } from "./lib/config.js";
-import { FREIGHTER_INSTALL_URL } from "./lib/freighter.js";
+import { FREIGHTER_INSTALL_URL, FREIGHTER_NOT_FOUND_CODE } from "./lib/freighter.js";
 
 export type { Resource };
 
@@ -182,6 +183,35 @@ export default function App() {
 
   const resources = useMemo((): Resource[] => {
     if (!rawResources) return [];
+    
+    // Clear overrides that don't match the current server state
+    setOverrides((prev) => {
+      const reconciled: Record<string, Partial<Resource>> = {};
+      for (const [id, override] of Object.entries(prev)) {
+        const serverResource = rawResources.find((r) => r.id === id);
+        if (!serverResource) continue;
+        
+        const stillValid: Partial<Resource> = {};
+        // Keep price override only if server hasn't changed
+        if (override.price !== undefined && override.price !== serverResource.price) {
+          stillValid.price = override.price;
+        }
+        // Keep owner override only if server hasn't changed
+        if (override.walletAddress !== undefined && override.walletAddress !== serverResource.walletAddress) {
+          stillValid.walletAddress = override.walletAddress;
+        }
+        // Keep other overrides
+        if (override.onchainStatus !== undefined && override.onchainStatus !== serverResource.onchainStatus) {
+          stillValid.onchainStatus = override.onchainStatus;
+        }
+        
+        if (Object.keys(stillValid).length > 0) {
+          reconciled[id] = stillValid;
+        }
+      }
+      return reconciled;
+    });
+    
     return rawResources.map((r) => ({ ...r, ...(overrides[r.id] ?? {}) }));
   }, [rawResources, overrides]);
 
@@ -240,7 +270,15 @@ export default function App() {
 
   const toggleLanguage = useCallback(async () => {
     const next = i18n.language === "en" ? "es" : "en";
-    await loadLocale(next);
+    try {
+
+      await loadLocale(next);
+
+    } catch (error) {
+
+      console.error("Failed to load locale", error);
+
+    }
     await i18n.changeLanguage(next);
     document.documentElement.lang = next;
   }, [i18n]);
@@ -465,7 +503,7 @@ export default function App() {
     wallet.error && (
       <p id="wallet-error" role="alert" className="synapse-wallet-error">
         {wallet.error}
-        {/not found/i.test(wallet.error) && (
+        {wallet.errorCode === FREIGHTER_NOT_FOUND_CODE && (
           <> <a href={FREIGHTER_INSTALL_URL} target="_blank" rel="noopener noreferrer">{t("app.install_freighter")} ↗</a></>
         )}
       </p>
@@ -662,6 +700,7 @@ export default function App() {
             recipient={activeModal.resource.walletAddress} accessUrl={activeModal.resource.accessUrl}
             walletAddress={wallet.status === "connected" ? wallet.address : null}
             onConnect={() => void wallet.connect()} connecting={walletBusy} walletError={wallet.error}
+            walletErrorCode={wallet.errorCode}
             onClose={closeModal} onCopyUrl={handleCopyUrl} />
         </Suspense>
       )}
@@ -696,6 +735,7 @@ export default function App() {
       {toast && (
         <Toast message={toast.message} fallbackUrl={toast.fallbackUrl} onDismiss={dismissToast} />
       )}
+      <ServiceWorkerUpdatePrompt />
     </div>
   );
 }

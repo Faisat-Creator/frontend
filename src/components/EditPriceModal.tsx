@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useEditPrice } from "../hooks/useEditPrice.js";
 import { useDialogA11y } from "../hooks/useDialogA11y.js";
 
@@ -26,13 +26,15 @@ export function EditPriceModal({ resourceId, currentPrice, apiKey, onClose, onCo
   const busy = ["preparing", "signing", "submitting"].includes(status);
   const dialogRef = useDialogA11y<HTMLDivElement>({ onClose, canClose: () => !busy });
 
+  useEffect(() => {
+    if (status === "confirmed" && newPrice) {
+      onConfirmed(newPrice);
+    }
+  }, [status, newPrice, onConfirmed]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     editPrice(price);
-  }
-
-  if (status === "confirmed" && newPrice) {
-    onConfirmed(newPrice);
   }
 
   return (
