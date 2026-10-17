@@ -50,12 +50,13 @@ function unreachable(status?: number): ApiError {
 }
 
 function misconfigured(status: number): ApiError {
-  return new ApiError(
+  const detail =
     `The API returned a web page instead of data — requests are going to ${describeApiTarget()}. ` +
-      "Set VITE_API_URL to your SynapsVault backend URL and rebuild.",
-    "misconfigured",
-    status,
-  );
+    "Set VITE_API_URL to your SynapsVault backend URL and rebuild.";
+  if (import.meta.env.DEV) return new ApiError(detail, "misconfigured", status);
+  // Operator guidance belongs in the console, not in front of end users.
+  console.error(detail);
+  return new ApiError("The SynapsVault service is temporarily unavailable. Please try again later.", "misconfigured", status);
 }
 
 /** Build a full API URL from a path like "/resources". */
