@@ -19,9 +19,14 @@ function cacheKey(filters?: CatalogFilters): string {
  * sessionStorage so offline / flaky-network views can show cached data with a
  * stale indicator.
  */
-export async function fetchCatalogWithCache(filters?: CatalogFilters): Promise<CatalogFetchResult> {
+export async function fetchCatalogWithCache(
+  filters?: CatalogFilters,
+  signal?: AbortSignal,
+): Promise<CatalogFetchResult> {
   const key = cacheKey(filters);
   try {
+    const data = await fetchCatalog(filters, signal);
+    sessionStorage.setItem(key, JSON.stringify({ data, at: Date.now() }));
     const data = await fetchCatalog(filters);
     try {
       sessionStorage.setItem(key, JSON.stringify({ data, at: Date.now() }));
@@ -35,8 +40,23 @@ export async function fetchCatalogWithCache(filters?: CatalogFilters): Promise<C
     if (!(err instanceof ApiError && err.kind === "unreachable")) throw err;
     const raw = sessionStorage.getItem(key);
     if (raw) {
-      const { data, at } = JSON.parse(raw) as { data: unknown[]; at: number };
-      return { data, stale: true, syncedAt: new Date(at) };
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "data" in parsed &&
+          Array.isArray(parsed.data) &&
+          "at" in parsed &&
+          typeof parsed.at === "number" &&
+          Number.isFinite(parsed.at)
+        ) {
+          return { data: parsed.data, stale: true, syncedAt: new Date(parsed.at) };
+        }
+      } catch {
+        // Corrupt cache entries must never mask the original network error.
+      }
+      sessionStorage.removeItem(key);
     }
     throw err;
   }
