@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useBuyResource } from "../hooks/useBuyResource.js";
-import { FREIGHTER_INSTALL_URL } from "../lib/freighter.js";
-import { safeExternalUrl } from "../lib/safeExternalUrl.js";
+import { FREIGHTER_INSTALL_URL, FREIGHTER_NOT_FOUND_CODE, type WalletErrorCode } from "../lib/freighter.js";
+import { safeExternalUrl } from "../lib/safeUrl.js";
+import { useDialogA11y } from "../hooks/useDialogA11y.js";
 import { formatPrice, shortAddress } from "./ResourceCard.js";
 
 interface BuyModalProps {
@@ -21,6 +22,8 @@ interface BuyModalProps {
   connecting?: boolean;
   /** Last wallet connection error, shown inline. */
   walletError?: string | null;
+  /** Machine-readable error code for the last wallet connection error. */
+  walletErrorCode?: WalletErrorCode | null;
 }
 
 /**
@@ -40,37 +43,24 @@ export function BuyModal({
   onConnect,
   connecting = false,
   walletError,
+  walletErrorCode,
 }: BuyModalProps) {
   const { t } = useTranslation();
-  const { status, result, error, buy, reset } = useBuyResource(walletAddress);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { status, result, error, errorCode, buy, reset } = useBuyResource(walletAddress);
   const displayPrice = formatPrice(price);
   const safeResultUrl = result?.url ? safeExternalUrl(result.url) : null;
 
-  useEffect(() => {
-    previousFocusRef.current = document.activeElement as HTMLElement;
-    dialogRef.current?.focus();
-    return () => previousFocusRef.current?.focus();
-  }, []);
-
   // Block close mid-payment so a half-signed flow isn't abandoned silently.
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (status === "paying") return;
     reset();
     onClose();
-  };
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Mirror handleClose: don't allow Escape to abandon an in-flight payment.
-      if (e.key !== "Escape" || status === "paying") return;
-      reset();
-      onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
   }, [status, reset, onClose]);
+
+  const dialogRef = useDialogA11y<HTMLDivElement>({
+    onClose: handleClose,
+    canClose: () => status !== "paying",
+  });
 
   return (
     <div
@@ -148,7 +138,7 @@ export function BuyModal({
                   {walletError && (
                     <p role="alert" className="text-xs text-danger">
                       {walletError}
-                      {/not found/i.test(walletError) && (
+                      {walletErrorCode === FREIGHTER_NOT_FOUND_CODE && (
                         <>
                           {" "}
                           <a href={FREIGHTER_INSTALL_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
@@ -233,7 +223,19 @@ export function BuyModal({
                   <circle cx="8" cy="8" r="6.25" />
                   <path d="M8 5v3.5M8 11h.01" />
                 </svg>
-                <p>{error}</p>
+                <div>
+                  <p>{error}</p>
+                  {errorCode === FREIGHTER_NOT_FOUND_CODE && (
+                    <a
+                      href={FREIGHTER_INSTALL_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block font-semibold underline"
+                    >
+                      {t("app.install_freighter")} ↗
+                    </a>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => buy(accessUrl)}

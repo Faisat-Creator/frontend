@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { prepareRegisterTx, submitRegisterTx, RegistrationError } from "../api/resources.js";
 import { signWithFreighter } from "../lib/freighter.js";
+import { useDialogA11y } from "../hooks/useDialogA11y.js";
 
 interface RegisterModalProps {
   resourceId: string;
@@ -89,13 +90,29 @@ export function RegisterModal({ resourceId, apiKey, onClose, onConfirmed }: Regi
     return `${baseUrl}/tx/${hash}`;
   }
 
+  const dialogRef = useDialogA11y<HTMLDivElement>({
+    onClose,
+    canClose: () => state !== "submitting",
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black bg-opacity-50 p-0 sm:items-center sm:p-4">
-      <div className="w-full max-w-none overflow-y-auto rounded-none bg-surface-raised p-4 shadow-xl sm:max-w-md sm:rounded-lg sm:p-6">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="register-title"
+        tabIndex={-1}
+        className="w-full max-w-none overflow-y-auto rounded-none bg-surface-raised p-4 shadow-xl outline-none sm:max-w-md sm:rounded-lg sm:p-6"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-fg">Register on Blockchain</h2>
+          <h2 id="register-title" className="text-lg font-semibold text-fg">
+            Register on Blockchain
+          </h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="text-fg-subtle hover:text-fg"
             disabled={state === "submitting"}
           >

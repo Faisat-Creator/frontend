@@ -38,12 +38,10 @@ export function Toast({ message, onDismiss, duration = 2500, fallbackUrl }: Toas
   }, []);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-4 left-4 right-4 z-50 flex max-w-none flex-col gap-2 rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-sm dark:bg-gray-100 dark:text-gray-900"
-    >
-      <span>{message}</span>
+    <div className="fixed bottom-4 left-4 right-4 z-50 flex max-w-none flex-col gap-2 rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-sm dark:bg-gray-100 dark:text-gray-900">
+      <span role="status" aria-live="polite">
+        {message}
+      </span>
       {fallbackUrl && (
         <input
           ref={inputRef}
