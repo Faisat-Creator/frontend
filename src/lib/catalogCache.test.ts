@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchCatalogWithCache } from "./catalogCache.js";
 import { fetchCatalog } from "../api/resources.js";
+import { ApiError } from "../api/http.js";
 
 vi.mock("../api/resources.js", () => ({
   fetchCatalog: vi.fn(),
@@ -25,7 +26,7 @@ describe("fetchCatalogWithCache", () => {
   it("returns cached data with stale=true when the network fails", async () => {
     vi.mocked(fetchCatalog)
       .mockResolvedValueOnce([{ id: "1", title: "A" }])
-      .mockRejectedValueOnce(new Error("Network down"));
+      .mockRejectedValueOnce(new ApiError("Network down", "unreachable"));
 
     await fetchCatalogWithCache();
     const result = await fetchCatalogWithCache();
@@ -36,7 +37,7 @@ describe("fetchCatalogWithCache", () => {
   });
 
   it("rethrows when there is no cache and the network fails", async () => {
-    vi.mocked(fetchCatalog).mockRejectedValue(new Error("Network down"));
+    vi.mocked(fetchCatalog).mockRejectedValue(new ApiError("Network down", "unreachable"));
 
     await expect(fetchCatalogWithCache()).rejects.toThrow("Network down");
   });
@@ -57,5 +58,13 @@ describe("fetchCatalogWithCache", () => {
     await fetchCatalogWithCache({ search: "signal" }, signal);
 
     expect(fetchCatalog).toHaveBeenCalledWith({ search: "signal" }, signal);
+  it("rethrows non-network errors even when cached data exists", async () => {
+    vi.mocked(fetchCatalog)
+      .mockResolvedValueOnce([{ id: "1", title: "A" }])
+      .mockRejectedValueOnce(new ApiError("Forbidden", "http", 403));
+
+    await fetchCatalogWithCache();
+
+    await expect(fetchCatalogWithCache()).rejects.toThrow("Forbidden");
   });
 });
