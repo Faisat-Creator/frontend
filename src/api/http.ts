@@ -94,18 +94,35 @@ function withAuth(init?: RequestInit): RequestInit | undefined {
   return { ...init, headers };
 }
 
+/** How long a request may wait for a response before it is treated as unreachable. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+
 /**
- * fetch() that turns network failures (backend down, DNS, CORS) into an
- * "unreachable" ApiError. Abort errors are rethrown untouched so callers can
- * ignore them.
+ * fetch() that turns network failures (backend down, DNS, CORS) and requests
+ * that exceed REQUEST_TIMEOUT_MS into an "unreachable" ApiError, so the UI's
+ * retry path applies. Caller-initiated abort errors are rethrown untouched so
+ * callers can ignore them.
  */
 export async function networkFetch(url: string, init?: RequestInit): Promise<Response> {
   // `init` (including any signed request body) is forwarded to fetch unchanged.
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+  const callerSignal = init?.signal;
+  const forwardAbort = () => controller.abort();
+  if (callerSignal?.aborted) controller.abort();
+  else callerSignal?.addEventListener("abort", forwardAbort);
   try {
-    return await fetch(url, init);
+    return await fetch(url, { ...init, signal: controller.signal });
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    if (err instanceof DOMException && err.name === "AbortError" && !timedOut) throw err;
     throw unreachable();
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener("abort", forwardAbort);
   }
 }
 
