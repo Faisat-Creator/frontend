@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Toast } from "./components/Toast.js";
+import { ServiceWorkerUpdatePrompt } from "./components/ServiceWorkerUpdatePrompt.js";
 import { ResourceGridSkeleton } from "./components/ResourceCardSkeleton.js";
 import { ErrorBanner } from "./components/ErrorBanner.js";
 import { CatalogStaleBanner } from "./components/CatalogStaleBanner.js";
@@ -705,6 +706,7 @@ export default function App() {
       {toast && (
         <Toast message={toast.message} fallbackUrl={toast.fallbackUrl} onDismiss={dismissToast} />
       )}
+      <ServiceWorkerUpdatePrompt />
     </div>
   );
 }
