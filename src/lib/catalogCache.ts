@@ -1,5 +1,6 @@
 import type { CatalogFilters } from "../api/resources.js";
 import { fetchCatalog } from "../api/resources.js";
+import { ApiError } from "../api/http.js";
 
 const CACHE_PREFIX = "synapsvault-catalog:";
 
@@ -29,6 +30,9 @@ export async function fetchCatalogWithCache(filters?: CatalogFilters): Promise<C
     }
     return { data, stale: false, syncedAt: new Date() };
   } catch (err) {
+    // Only network-level failures fall back to cache; HTTP errors, validation
+    // failures and aborts are surfaced to the caller.
+    if (!(err instanceof ApiError && err.kind === "unreachable")) throw err;
     const raw = sessionStorage.getItem(key);
     if (raw) {
       const { data, at } = JSON.parse(raw) as { data: unknown[]; at: number };
