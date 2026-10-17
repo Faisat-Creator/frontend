@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type AsyncStatus = "idle" | "loading" | "success" | "error";
 
@@ -71,7 +71,6 @@ export function useAsync<T>(
   }, [run]);
 
   const retry = useCallback(() => {
-    retryCount.current += 1;
     run();
   }, [run]);
 
